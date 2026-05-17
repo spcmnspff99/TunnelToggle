@@ -455,10 +455,27 @@ HTML_TEMPLATE = """
         // Fetch external IP from the client side (device's actual external IP)
         async function fetchExternalIP() {
             try {
-                const response = await fetch('https://ifconfig.co/json');
-                const data = await response.json();
-                updateExternalIPDisplay(data);
-                return data.ip;
+                // ipify is CORS-friendly and returns the client's real external IP
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+                
+                // Fetch geo info separately using ipapi.co which supports CORS
+                let geoData = {};
+                try {
+                    const geoResponse = await fetch(`https://ipapi.co/${ip}/json/`);
+                    geoData = await geoResponse.json();
+                } catch (geoErr) {
+                    console.warn('Geo lookup failed:', geoErr);
+                }
+                
+                updateExternalIPDisplay({
+                    ip: ip,
+                    city: geoData.city,
+                    region: geoData.region,
+                    country: geoData.country_name
+                });
+                return ip;
             } catch (error) {
                 console.error('Error fetching external IP:', error);
                 document.getElementById('external-ip').textContent = 'Unable to fetch';
