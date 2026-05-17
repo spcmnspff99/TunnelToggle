@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  tunneltoggle:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tunneltoggle:latest
+    container_name: tunneltoggle
+    
+    # Use host networking for transparent IP detection
+    # This ensures the container sees the real client IP without NAT
+    network_mode: host
+    
+    # Environment variables from .env file
+    env_file:
+      - .env
+    
+    # Restart policy for reliability
+    restart: unless-stopped
+    
+    # Resource limits (optional - adjust as needed)
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:5000', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
