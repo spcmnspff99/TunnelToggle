@@ -13,14 +13,11 @@ WORKDIR /app
 RUN apk add --no-cache gosu bash
 
 # Copy package files first for better layer caching
-COPY package*.json ./
+COPY package.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Install TypeScript for building
-RUN npm install -g typescript
+# Install dependencies (including dev dependencies for build)
+RUN npm install && npm cache clean --force
 
 # Copy source code
 COPY src ./src
@@ -29,8 +26,9 @@ COPY src ./src
 RUN npm run build
 
 # Remove source files and dev dependencies to reduce image size
-RUN rm -rf src tsconfig.json && \
-    npm uninstall -g typescript
+RUN rm -rf src tsconfig.json node_modules && \
+    npm install --only=production && \
+    npm cache clean --force
 
 # Create entrypoint script to handle PUID/PGID
 RUN echo '#!/bin/bash\n\
