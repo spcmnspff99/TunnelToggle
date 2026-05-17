@@ -485,86 +485,36 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             const geoInfoEl = document.getElementById('geo-info');
             
             try {
-                // Use icanhazip.com - simple, no caching, supports CORS
+                // Use ip-api.com - supports CORS, provides geo data, no aggressive caching
                 const cacheBuster = new Date().getTime();
-                console.log('[External IP] Fetching from icanhazip.com (client-side)...');
+                console.log('[External IP] Fetching from ip-api.com (client-side)...');
                 
-                const ipResponse = await fetch(\`https://ipv4.icanhazip.com?t=\${cacheBuster}\`, {
-                    cache: 'no-store',
-                    headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache'
-                    }
+                const response = await fetch(\`http://ip-api.com/json/?t=\${cacheBuster}\`, {
+                    cache: 'no-store'
                 });
                 
-                if (!ipResponse.ok) {
-                    throw new Error(\`HTTP error! status: \${ipResponse.status}\`);
+                if (!response.ok) {
+                    throw new Error(\`HTTP error! status: \${response.status}\`);
                 }
                 
-                const ip = (await ipResponse.text()).trim();
-                console.log('[External IP] Got IP:', ip);
+                const data = await response.json();
+                console.log('[External IP] Response:', data);
                 
-                externalIpEl.textContent = ip;
+                externalIpEl.textContent = data.query || 'Unknown';
                 externalIpEl.classList.remove('loading');
                 
-                // Now try to get geolocation for this IP using ip-api.com (supports CORS)
-                try {
-                    console.log('[External IP] Fetching geo data from ip-api.com...');
-                    const geoResponse = await fetch(\`http://ip-api.com/json/\${ip}?t=\${cacheBuster}\`, {
-                        cache: 'no-store'
-                    });
-                    
-                    if (geoResponse.ok) {
-                        const geoData = await geoResponse.json();
-                        console.log('[External IP] Geo data:', geoData);
-                        
-                        const city = geoData.city || '';
-                        const region = geoData.regionName || '';
-                        const country = geoData.country || '';
-                        
-                        if (city || region) {
-                            geoInfoEl.textContent = 
-                                \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
-                        }
-                    }
-                } catch (geoError) {
-                    console.warn('[External IP] Could not fetch geo data:', geoError);
-                    // Geo data is optional, don't fail if it doesn't work
+                const city = data.city || '';
+                const region = data.regionName || '';
+                const country = data.country || '';
+                
+                if (city || region) {
+                    geoInfoEl.textContent = 
+                        \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
                 }
             } catch (error) {
                 console.error('[External IP] Failed to fetch:', error);
-                
-                // Fallback: try ip-api.com (also supports CORS)
-                try {
-                    console.log('[External IP] Trying fallback ip-api.com...');
-                    const cacheBuster = new Date().getTime();
-                    const response = await fetch(\`http://ip-api.com/json/?t=\${cacheBuster}\`, {
-                        cache: 'no-store'
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('[External IP] Fallback response:', data);
-                        
-                        externalIpEl.textContent = data.query || 'Unknown';
-                        externalIpEl.classList.remove('loading');
-                        
-                        const city = data.city || '';
-                        const region = data.regionName || '';
-                        const country = data.country || '';
-                        
-                        if (city || region) {
-                            geoInfoEl.textContent = 
-                                \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
-                        }
-                    } else {
-                        throw new Error('Fallback also failed');
-                    }
-                } catch (fallbackError) {
-                    console.error('[External IP] All services failed:', fallbackError);
-                    externalIpEl.textContent = 'Unable to fetch';
-                    externalIpEl.classList.remove('loading');
-                }
+                externalIpEl.textContent = 'Unable to fetch';
+                externalIpEl.classList.remove('loading');
             }
         }
         
