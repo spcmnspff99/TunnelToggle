@@ -380,6 +380,32 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             margin-top: 0.5rem;
         }
         
+        .refresh-btn {
+            background: #424242;
+            border: none;
+            color: #e0e0e0;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-top: 0.75rem;
+            transition: background 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            background: #616161;
+        }
+        
+        .refresh-btn:focus {
+            outline: 2px solid #ffeb3b;
+            outline-offset: 2px;
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .loading {
             color: #888;
             font-style: italic;
@@ -416,6 +442,7 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             <div class="info-label">External IP Address</div>
             <div class="external-ip-value loading" id="external-ip">Loading...</div>
             <div class="geo-info" id="geo-info"></div>
+            <button class="refresh-btn" id="refresh-btn" onclick="refreshExternalIP()">🔄 Refresh</button>
         </div>
         
         ${!errorMessage ? `
@@ -438,47 +465,91 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
     <script>
         // Fetch external IP and geo information
         async function fetchExternalIP() {
+            const externalIpEl = document.getElementById('external-ip');
+            const geoInfoEl = document.getElementById('geo-info');
+            
             try {
-                // Try ifconfig.co first
-                const response = await fetch('https://ifconfig.co/json');
-                const data = await response.json();
+                // Add cache-busting timestamp to prevent cached responses
+                const cacheBuster = new Date().getTime();
+                console.log('[External IP] Fetching from ifconfig.co...');
                 
-                document.getElementById('external-ip').textContent = data.ip || 'Unknown';
-                document.getElementById('external-ip').classList.remove('loading');
+                const response = await fetch(\`https://ifconfig.co/json?t=\${cacheBuster}\`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(\`HTTP error! status: \${response.status}\`);
+                }
+                
+                const data = await response.json();
+                console.log('[External IP] ifconfig.co response:', data);
+                
+                externalIpEl.textContent = data.ip || 'Unknown';
+                externalIpEl.classList.remove('loading');
                 
                 const city = data.city || '';
                 const region = data.region_name || data.region || '';
                 const country = data.country || data.country_iso || '';
                 
                 if (city || region) {
-                    document.getElementById('geo-info').textContent = 
+                    geoInfoEl.textContent = 
                         \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
                 }
             } catch (error) {
-                console.error('Error fetching external IP:', error);
+                console.error('[External IP] ifconfig.co failed:', error);
                 
                 // Fallback to ipinfo.io if ifconfig.co fails
                 try {
-                    const response = await fetch('https://ipinfo.io/json');
-                    const data = await response.json();
+                    const cacheBuster = new Date().getTime();
+                    console.log('[External IP] Trying fallback ipinfo.io...');
                     
-                    document.getElementById('external-ip').textContent = data.ip || 'Unknown';
-                    document.getElementById('external-ip').classList.remove('loading');
+                    const response = await fetch(\`https://ipinfo.io/json?t=\${cacheBuster}\`, {
+                        cache: 'no-store'
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(\`HTTP error! status: \${response.status}\`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('[External IP] ipinfo.io response:', data);
+                    
+                    externalIpEl.textContent = data.ip || 'Unknown';
+                    externalIpEl.classList.remove('loading');
                     
                     const city = data.city || '';
                     const region = data.region || '';
                     const country = data.country || '';
                     
                     if (city || region) {
-                        document.getElementById('geo-info').textContent = 
+                        geoInfoEl.textContent = 
                             \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
                     }
                 } catch (fallbackError) {
-                    console.error('Fallback also failed:', fallbackError);
-                    document.getElementById('external-ip').textContent = 'Unable to fetch';
-                    document.getElementById('external-ip').classList.remove('loading');
+                    console.error('[External IP] All services failed:', fallbackError);
+                    externalIpEl.textContent = 'Unable to fetch';
+                    externalIpEl.classList.remove('loading');
                 }
             }
+        }
+        
+        // Manual refresh button handler
+        async function refreshExternalIP() {
+            const refreshBtn = document.getElementById('refresh-btn');
+            const externalIpEl = document.getElementById('external-ip');
+            
+            refreshBtn.disabled = true;
+            refreshBtn.textContent = '⏳ Checking...';
+            externalIpEl.classList.add('loading');
+            externalIpEl.textContent = 'Checking...';
+            
+            await fetchExternalIP();
+            
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = '🔄 Refresh';
         }
         
         // Toggle VPN routing
@@ -498,16 +569,21 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Reload page to show updated status
+                    console.log(\`[Toggle] Successfully \${data.action} IP \${data.ip}\`);
+                    // Wait 2 seconds for routing changes to propagate, then reload
+                    button.textContent = 'Applying changes...';
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                     window.location.reload();
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error occurred'));
                     button.disabled = false;
+                    button.textContent = button.classList.contains('btn-route') ? 'Route Through VPN' : 'Disconnect from VPN';
                 }
             } catch (error) {
                 console.error('Error toggling VPN:', error);
                 alert('Failed to connect to server');
                 button.disabled = false;
+                button.textContent = button.classList.contains('btn-route') ? 'Route Through VPN' : 'Disconnect from VPN';
             }
         }
         
