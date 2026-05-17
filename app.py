@@ -29,7 +29,7 @@ FLASK_PORT = int(os.getenv("FLASK_PORT", 5000))
 # OPNsense API endpoints
 ALIAS_GET_URL = f"https://{OPNSENSE_IP}/api/firewall/alias/getItem/{ALIAS_UUID}"
 ALIAS_SET_URL = f"https://{OPNSENSE_IP}/api/firewall/alias/setItem/{ALIAS_UUID}"
-FILTER_RELOAD_URL = f"https://{OPNSENSE_IP}/api/firewall/filter/reload"
+ALIAS_RECONFIGURE_URL = f"https://{OPNSENSE_IP}/api/firewall/alias/reconfigure"
 
 
 def get_client_ip():
@@ -69,33 +69,30 @@ def get_alias_ips(alias_data):
     
     # Handle different content formats from OPNsense API
     if isinstance(content, dict):
-        # Content is a dict where keys are IPs or UUIDs and values contain IP data
-        # Try to extract IPs from values if they're dicts, otherwise use keys
+        # Content is a dict where selected items have 'selected': 1
+        # Only extract items that are currently selected (active in the alias)
         ips = []
         for key, value in content.items():
-            if isinstance(value, dict):
-                # If value is a dict, look for an 'ip' field or similar
-                ip = value.get("ip") or value.get("address") or value.get("value")
-                if ip:
-                    ips.append(ip)
-            else:
-                # Otherwise, use the key itself as the IP
-                ips.append(key)
+            if isinstance(value, dict) and value.get("selected") == 1:
+                # Extract the value field which contains the actual IP/hostname
+                ip_value = value.get("value")
+                if ip_value:
+                    ips.append(ip_value)
         return ips
     elif isinstance(content, list):
         # Content is a list of IPs
         return [str(ip).strip() for ip in content if ip]
     else:
-        # Content is a comma-separated string
-        return [ip.strip() for ip in str(content).split(",") if ip.strip()]
+        # Content is a comma-separated or newline-separated string
+        return [ip.strip() for ip in str(content).replace("\n", ",").split(",") if ip.strip()]
 
 
 
 def update_alias(new_ip_list):
     """Update the alias with a new list of IPs."""
     try:
-        # Join IPs into comma-separated string
-        content = ",".join(new_ip_list)
+        # OPNsense expects newline-separated values for alias content
+        content = "\n".join(new_ip_list)
         
         payload = {
             "alias": {
@@ -103,7 +100,8 @@ def update_alias(new_ip_list):
             }
         }
         
-        logger.info(f"Updating alias with payload: {payload}")
+        logger.info(f"Updating alias with {len(new_ip_list)} IPs")
+        logger.info(f"Payload content: {content}")
         
         response = requests.post(
             ALIAS_SET_URL,
@@ -113,18 +111,25 @@ def update_alias(new_ip_list):
             timeout=10
         )
         response.raise_for_status()
-        logger.info(f"Update response: {response.json()}")
+        result = response.json()
+        logger.info(f"Update response: {result}")
         
-        # Reload firewall to apply changes
-        reload_response = requests.post(
-            FILTER_RELOAD_URL,
+        # Check if the update was successful
+        if result.get("result") != "saved":
+            logger.error(f"Update failed: {result}")
+            return False
+        
+        # Reconfigure the alias system to apply changes
+        reconfigure_response = requests.post(
+            ALIAS_RECONFIGURE_URL,
             auth=(OPNSENSE_KEY, OPNSENSE_SECRET),
             verify=False,
             timeout=10
         )
-        reload_response.raise_for_status()
+        reconfigure_response.raise_for_status()
+        logger.info(f"Reconfigure response: {reconfigure_response.json()}")
         
-        logger.info(f"Successfully updated alias with IPs: {content}")
+        logger.info(f"Successfully updated alias with {len(new_ip_list)} IPs")
         return True
     except Exception as e:
         logger.error(f"Error updating alias: {e}")
