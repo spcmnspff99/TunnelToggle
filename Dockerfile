@@ -4,7 +4,8 @@ FROM node:20-alpine
 # Set environment variables
 ENV NODE_ENV=production \
     PUID=1001 \
-    PGID=1001
+    PGID=1001 \
+    PATH=/app/node_modules/.bin:$PATH
 
 # Set working directory
 WORKDIR /app
@@ -22,8 +23,8 @@ RUN npm install && npm cache clean --force
 # Copy source code
 COPY src ./src
 
-# Build TypeScript directly (tsc is not in PATH in Alpine, so use full path)
-RUN npx --package=typescript tsc
+# Build TypeScript (tsc is now in PATH via node_modules/.bin)
+RUN tsc
 
 # Remove source files and dev dependencies to reduce image size
 RUN rm -rf src tsconfig.json node_modules && \
