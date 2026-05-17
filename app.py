@@ -87,7 +87,6 @@ def get_alias_ips(alias_data):
         return [ip.strip() for ip in str(content).replace("\n", ",").split(",") if ip.strip()]
 
 
-
 def update_alias(new_ip_list):
     """Update the alias with a new list of IPs."""
     try:
@@ -399,36 +398,61 @@ HTML_TEMPLATE = """
     </div>
     
     <script>
-        // Fetch external IP and geo information
-        async function fetchExternalIP() {
-            try {
-                const response = await fetch('https://ipinfo.io/json');
-                const data = await response.json();
-                
-                document.getElementById('external-ip').textContent = data.ip || 'Unknown';
+        // Update external IP display with new data
+        function updateExternalIPDisplay(ipInfo) {
+            if (ipInfo && ipInfo.ip) {
+                document.getElementById('external-ip').textContent = ipInfo.ip;
                 document.getElementById('external-ip').classList.remove('loading');
                 
-                const city = data.city || '';
-                const region = data.region || '';
-                const country = data.country || '';
+                const city = ipInfo.city || '';
+                const region = ipInfo.region || '';
+                const country = ipInfo.country || '';
                 
                 if (city || region) {
                     document.getElementById('geo-info').textContent = 
                         `${city}${city && region ? ', ' : ''}${region}${country ? ' (' + country + ')' : ''}`;
+                } else {
+                    document.getElementById('geo-info').textContent = '';
                 }
+            }
+        }
+        
+        // Fetch external IP from the client side (device's actual external IP)
+        async function fetchExternalIP() {
+            try {
+                const response = await fetch('https://ifconfig.co/json');
+                const data = await response.json();
+                updateExternalIPDisplay(data);
+                return data.ip;
             } catch (error) {
                 console.error('Error fetching external IP:', error);
                 document.getElementById('external-ip').textContent = 'Unable to fetch';
                 document.getElementById('external-ip').classList.remove('loading');
+                return null;
             }
         }
         
-        // Refresh external IP with visual indicator
-        async function refreshExternalIP() {
+        // Poll for external IP change after routing update
+        async function waitForIPChange(originalIP, maxAttempts = 6) {
             const ipElement = document.getElementById('external-ip');
-            ipElement.classList.add('loading');
-            ipElement.textContent = 'Refreshing...';
-            await fetchExternalIP();
+            
+            for (let i = 0; i < maxAttempts; i++) {
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+                
+                ipElement.classList.add('loading');
+                ipElement.textContent = `Checking routing... (${i + 1}/${maxAttempts})`;
+                
+                const newIP = await fetchExternalIP();
+                
+                // If IP changed or we've exhausted attempts, reload page
+                if (newIP && newIP !== originalIP) {
+                    console.log(`IP changed from ${originalIP} to ${newIP}`);
+                    break;
+                }
+            }
+            
+            // Reload page to show updated button status
+            window.location.reload();
         }
         
         // Toggle VPN routing
@@ -436,6 +460,10 @@ HTML_TEMPLATE = """
             const button = document.getElementById('toggle-btn');
             button.disabled = true;
             button.textContent = 'Processing...';
+            
+            // Capture current external IP before toggling
+            const currentIPElement = document.getElementById('external-ip');
+            const originalIP = currentIPElement.textContent;
             
             try {
                 const response = await fetch('/toggle', {
@@ -448,25 +476,28 @@ HTML_TEMPLATE = """
                 const data = await response.json();
                 
                 if (data.success) {
-                    // Reload page to show updated status
-                    window.location.reload();
+                    // Wait for routing to propagate and IP to change
+                    button.textContent = 'Waiting for routing...';
+                    await waitForIPChange(originalIP);
                 } else {
                     alert('Error: ' + (data.error || 'Unknown error occurred'));
                     button.disabled = false;
+                    button.textContent = button.classList.contains('btn-route') 
+                        ? 'Route Through VPN' 
+                        : 'Disconnect from VPN';
                 }
             } catch (error) {
                 console.error('Error toggling VPN:', error);
                 alert('Failed to connect to server');
                 button.disabled = false;
+                button.textContent = button.classList.contains('btn-route') 
+                    ? 'Route Through VPN' 
+                    : 'Disconnect from VPN';
             }
         }
         
         // Load external IP on page load
         fetchExternalIP();
-        
-        // Re-fetch external IP after 4 seconds to account for routing changes
-        // This ensures the displayed IP reflects any recent VPN routing changes
-        setTimeout(refreshExternalIP, 4000);
     </script>
 </body>
 </html>
