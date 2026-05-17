@@ -423,6 +423,14 @@ HTML_TEMPLATE = """
             }
         }
         
+        // Refresh external IP with visual indicator
+        async function refreshExternalIP() {
+            const ipElement = document.getElementById('external-ip');
+            ipElement.classList.add('loading');
+            ipElement.textContent = 'Refreshing...';
+            await fetchExternalIP();
+        }
+        
         // Toggle VPN routing
         async function toggleVPN() {
             const button = document.getElementById('toggle-btn');
@@ -455,6 +463,10 @@ HTML_TEMPLATE = """
         
         // Load external IP on page load
         fetchExternalIP();
+        
+        // Re-fetch external IP after 4 seconds to account for routing changes
+        // This ensures the displayed IP reflects any recent VPN routing changes
+        setTimeout(refreshExternalIP, 4000);
     </script>
 </body>
 </html>
