@@ -330,6 +330,40 @@ HTML_TEMPLATE = """
             margin-top: 0.5rem;
         }
         
+        .refresh-btn {
+            background: #424242;
+            color: #66bb6a;
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            background: #66bb6a;
+            color: #121212;
+            transform: translateY(-2px);
+        }
+        
+        .refresh-btn:focus {
+            outline: 3px solid #ffeb3b;
+            outline-offset: 3px;
+            transform: scale(1.05);
+        }
+        
+        .refresh-btn:active {
+            transform: translateY(0);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         .loading {
             color: #888;
             font-style: italic;
@@ -370,6 +404,7 @@ HTML_TEMPLATE = """
             <div class="info-label">External IP Address</div>
             <div class="external-ip-value loading" id="external-ip">Loading...</div>
             <div class="geo-info" id="geo-info"></div>
+            <button class="refresh-btn" id="refresh-btn" onclick="refreshExternalIP()">🔄 Refresh IP</button>
         </div>
         
         {% if not error_message %}
@@ -430,6 +465,22 @@ HTML_TEMPLATE = """
                 document.getElementById('external-ip').classList.remove('loading');
                 return null;
             }
+        }
+        
+        // Manual refresh function
+        async function refreshExternalIP() {
+            const button = document.getElementById('refresh-btn');
+            const ipElement = document.getElementById('external-ip');
+            
+            button.disabled = true;
+            button.textContent = '🔄 Refreshing...';
+            ipElement.classList.add('loading');
+            ipElement.textContent = 'Loading...';
+            
+            await fetchExternalIP();
+            
+            button.disabled = false;
+            button.textContent = '🔄 Refresh IP';
         }
         
         // Poll for external IP change after routing update
