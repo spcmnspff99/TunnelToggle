@@ -4,10 +4,10 @@
   "description": "OPNsense VPN Gateway Toggle for Google TV & iPad",
   "main": "dist/index.js",
   "scripts": {
-    "build": "node_modules/.bin/tsc",
+    "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "node_modules/.bin/tsc && node dist/index.js",
-    "watch": "node_modules/.bin/tsc --watch"
+    "dev": "tsc && node dist/index.js",
+    "watch": "tsc --watch"
   },
   "keywords": [
     "opnsense",

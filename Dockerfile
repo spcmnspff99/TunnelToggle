@@ -22,8 +22,8 @@ RUN npm install && npm cache clean --force
 # Copy source code
 COPY src ./src
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript directly (tsc is not in PATH in Alpine, so use full path)
+RUN npx --package=typescript tsc
 
 # Remove source files and dev dependencies to reduce image size
 RUN rm -rf src tsconfig.json node_modules && \
