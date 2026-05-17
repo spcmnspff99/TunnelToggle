@@ -36,14 +36,9 @@ RUN rm -rf src tsconfig.json node_modules && \
 # Set production environment
 ENV NODE_ENV=production
 
-# Create entrypoint script to handle PUID/PGID
-RUN echo '#!/bin/bash\n\
-set -e\n\
-groupadd -g ${PGID} appgroup 2>/dev/null || true\n\
-useradd -u ${PUID} -g ${PGID} -m -s /bin/bash appuser 2>/dev/null || true\n\
-chown -R ${PUID}:${PGID} /app\n\
-exec gosu ${PUID}:${PGID} node dist/index.js\n\
-' > /entrypoint.sh && chmod +x /entrypoint.sh
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose application port
 EXPOSE 5000
