@@ -485,20 +485,23 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             const geoInfoEl = document.getElementById('geo-info');
             
             try {
-                // Use api.ipify.org - it supports CORS and is very reliable
+                // Use icanhazip.com - simple, no caching, supports CORS
                 const cacheBuster = new Date().getTime();
-                console.log('[External IP] Fetching from api.ipify.org (client-side)...');
+                console.log('[External IP] Fetching from icanhazip.com (client-side)...');
                 
-                const ipResponse = await fetch(\`https://api.ipify.org?format=json&t=\${cacheBuster}\`, {
-                    cache: 'no-store'
+                const ipResponse = await fetch(\`https://ipv4.icanhazip.com?t=\${cacheBuster}\`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache'
+                    }
                 });
                 
                 if (!ipResponse.ok) {
                     throw new Error(\`HTTP error! status: \${ipResponse.status}\`);
                 }
                 
-                const ipData = await ipResponse.json();
-                const ip = ipData.ip;
+                const ip = (await ipResponse.text()).trim();
                 console.log('[External IP] Got IP:', ip);
                 
                 externalIpEl.textContent = ip;
