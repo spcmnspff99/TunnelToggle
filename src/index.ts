@@ -504,10 +504,10 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
                 externalIpEl.textContent = ip;
                 externalIpEl.classList.remove('loading');
                 
-                // Now try to get geolocation for this IP using ipapi.co (supports CORS)
+                // Now try to get geolocation for this IP using ip-api.com (supports CORS)
                 try {
-                    console.log('[External IP] Fetching geo data from ipapi.co...');
-                    const geoResponse = await fetch(\`https://ipapi.co/json/?t=\${cacheBuster}\`, {
+                    console.log('[External IP] Fetching geo data from ip-api.com...');
+                    const geoResponse = await fetch(\`http://ip-api.com/json/\${ip}?t=\${cacheBuster}\`, {
                         cache: 'no-store'
                     });
                     
@@ -516,8 +516,8 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
                         console.log('[External IP] Geo data:', geoData);
                         
                         const city = geoData.city || '';
-                        const region = geoData.region || '';
-                        const country = geoData.country_name || geoData.country || '';
+                        const region = geoData.regionName || '';
+                        const country = geoData.country || '';
                         
                         if (city || region) {
                             geoInfoEl.textContent = 
