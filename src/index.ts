@@ -232,6 +232,22 @@ app.post('/toggle', async (req: Request, res: Response) => {
 });
 
 /**
+ * Get external IP (proxy endpoint to avoid CORS)
+ */
+app.get('/external-ip', async (req: Request, res: Response) => {
+  // Note: This endpoint exists but should not be used for client routing verification
+  // It returns the server's external IP, not the client's
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching external IP:', error);
+    res.status(500).json({ error: 'Failed to fetch external IP' });
+  }
+});
+
+/**
  * Render the HTML template
  */
 function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: string | null): string {
@@ -463,70 +479,83 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
     </div>
     
     <script>
-        // Fetch external IP and geo information
+        // Fetch external IP and geo information (CLIENT-SIDE - goes through device's route)
         async function fetchExternalIP() {
             const externalIpEl = document.getElementById('external-ip');
             const geoInfoEl = document.getElementById('geo-info');
             
             try {
-                // Add cache-busting timestamp to prevent cached responses
+                // Use api.ipify.org - it supports CORS and is very reliable
                 const cacheBuster = new Date().getTime();
-                console.log('[External IP] Fetching from ifconfig.co...');
+                console.log('[External IP] Fetching from api.ipify.org (client-side)...');
                 
-                const response = await fetch(\`https://ifconfig.co/json?t=\${cacheBuster}\`, {
-                    cache: 'no-store',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                const ipResponse = await fetch(\`https://api.ipify.org?format=json&t=\${cacheBuster}\`, {
+                    cache: 'no-store'
                 });
                 
-                if (!response.ok) {
-                    throw new Error(\`HTTP error! status: \${response.status}\`);
+                if (!ipResponse.ok) {
+                    throw new Error(\`HTTP error! status: \${ipResponse.status}\`);
                 }
                 
-                const data = await response.json();
-                console.log('[External IP] ifconfig.co response:', data);
+                const ipData = await ipResponse.json();
+                const ip = ipData.ip;
+                console.log('[External IP] Got IP:', ip);
                 
-                externalIpEl.textContent = data.ip || 'Unknown';
+                externalIpEl.textContent = ip;
                 externalIpEl.classList.remove('loading');
                 
-                const city = data.city || '';
-                const region = data.region_name || data.region || '';
-                const country = data.country || data.country_iso || '';
-                
-                if (city || region) {
-                    geoInfoEl.textContent = 
-                        \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
-                }
-            } catch (error) {
-                console.error('[External IP] ifconfig.co failed:', error);
-                
-                // Fallback to ipinfo.io if ifconfig.co fails
+                // Now try to get geolocation for this IP using ipapi.co (supports CORS)
                 try {
-                    const cacheBuster = new Date().getTime();
-                    console.log('[External IP] Trying fallback ipinfo.io...');
-                    
-                    const response = await fetch(\`https://ipinfo.io/json?t=\${cacheBuster}\`, {
+                    console.log('[External IP] Fetching geo data from ipapi.co...');
+                    const geoResponse = await fetch(\`https://ipapi.co/json/?t=\${cacheBuster}\`, {
                         cache: 'no-store'
                     });
                     
-                    if (!response.ok) {
-                        throw new Error(\`HTTP error! status: \${response.status}\`);
+                    if (geoResponse.ok) {
+                        const geoData = await geoResponse.json();
+                        console.log('[External IP] Geo data:', geoData);
+                        
+                        const city = geoData.city || '';
+                        const region = geoData.region || '';
+                        const country = geoData.country_name || geoData.country || '';
+                        
+                        if (city || region) {
+                            geoInfoEl.textContent = 
+                                \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                        }
                     }
+                } catch (geoError) {
+                    console.warn('[External IP] Could not fetch geo data:', geoError);
+                    // Geo data is optional, don't fail if it doesn't work
+                }
+            } catch (error) {
+                console.error('[External IP] Failed to fetch:', error);
+                
+                // Fallback: try ip-api.com (also supports CORS)
+                try {
+                    console.log('[External IP] Trying fallback ip-api.com...');
+                    const cacheBuster = new Date().getTime();
+                    const response = await fetch(\`http://ip-api.com/json/?t=\${cacheBuster}\`, {
+                        cache: 'no-store'
+                    });
                     
-                    const data = await response.json();
-                    console.log('[External IP] ipinfo.io response:', data);
-                    
-                    externalIpEl.textContent = data.ip || 'Unknown';
-                    externalIpEl.classList.remove('loading');
-                    
-                    const city = data.city || '';
-                    const region = data.region || '';
-                    const country = data.country || '';
-                    
-                    if (city || region) {
-                        geoInfoEl.textContent = 
-                            \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[External IP] Fallback response:', data);
+                        
+                        externalIpEl.textContent = data.query || 'Unknown';
+                        externalIpEl.classList.remove('loading');
+                        
+                        const city = data.city || '';
+                        const region = data.regionName || '';
+                        const country = data.country || '';
+                        
+                        if (city || region) {
+                            geoInfoEl.textContent = 
+                                \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                        }
+                    } else {
+                        throw new Error('Fallback also failed');
                     }
                 } catch (fallbackError) {
                     console.error('[External IP] All services failed:', fallbackError);
