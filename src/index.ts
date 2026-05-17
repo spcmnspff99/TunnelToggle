@@ -439,15 +439,16 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         // Fetch external IP and geo information
         async function fetchExternalIP() {
             try {
-                const response = await fetch('https://ipinfo.io/json');
+                // Try ifconfig.co first
+                const response = await fetch('https://ifconfig.co/json');
                 const data = await response.json();
                 
                 document.getElementById('external-ip').textContent = data.ip || 'Unknown';
                 document.getElementById('external-ip').classList.remove('loading');
                 
                 const city = data.city || '';
-                const region = data.region || '';
-                const country = data.country || '';
+                const region = data.region_name || data.region || '';
+                const country = data.country || data.country_iso || '';
                 
                 if (city || region) {
                     document.getElementById('geo-info').textContent = 
@@ -455,8 +456,28 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
                 }
             } catch (error) {
                 console.error('Error fetching external IP:', error);
-                document.getElementById('external-ip').textContent = 'Unable to fetch';
-                document.getElementById('external-ip').classList.remove('loading');
+                
+                // Fallback to ipinfo.io if ifconfig.co fails
+                try {
+                    const response = await fetch('https://ipinfo.io/json');
+                    const data = await response.json();
+                    
+                    document.getElementById('external-ip').textContent = data.ip || 'Unknown';
+                    document.getElementById('external-ip').classList.remove('loading');
+                    
+                    const city = data.city || '';
+                    const region = data.region || '';
+                    const country = data.country || '';
+                    
+                    if (city || region) {
+                        document.getElementById('geo-info').textContent = 
+                            \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                    }
+                } catch (fallbackError) {
+                    console.error('Fallback also failed:', fallbackError);
+                    document.getElementById('external-ip').textContent = 'Unable to fetch';
+                    document.getElementById('external-ip').classList.remove('loading');
+                }
             }
         }
         
