@@ -51,6 +51,7 @@ def get_alias_data():
         )
         response.raise_for_status()
         data = response.json()
+        logger.info(f"Alias data structure: {data}")
         return data.get("alias", {})
     except Exception as e:
         logger.error(f"Error fetching alias data: {e}")
@@ -66,8 +67,28 @@ def get_alias_ips(alias_data):
     if not content:
         return []
     
-    # IPs are stored as comma-separated values
-    return [ip.strip() for ip in content.split(",") if ip.strip()]
+    # Handle different content formats from OPNsense API
+    if isinstance(content, dict):
+        # Content is a dict where keys are IPs or UUIDs and values contain IP data
+        # Try to extract IPs from values if they're dicts, otherwise use keys
+        ips = []
+        for key, value in content.items():
+            if isinstance(value, dict):
+                # If value is a dict, look for an 'ip' field or similar
+                ip = value.get("ip") or value.get("address") or value.get("value")
+                if ip:
+                    ips.append(ip)
+            else:
+                # Otherwise, use the key itself as the IP
+                ips.append(key)
+        return ips
+    elif isinstance(content, list):
+        # Content is a list of IPs
+        return [str(ip).strip() for ip in content if ip]
+    else:
+        # Content is a comma-separated string
+        return [ip.strip() for ip in str(content).split(",") if ip.strip()]
+
 
 
 def update_alias(new_ip_list):
@@ -82,6 +103,8 @@ def update_alias(new_ip_list):
             }
         }
         
+        logger.info(f"Updating alias with payload: {payload}")
+        
         response = requests.post(
             ALIAS_SET_URL,
             auth=(OPNSENSE_KEY, OPNSENSE_SECRET),
@@ -90,6 +113,7 @@ def update_alias(new_ip_list):
             timeout=10
         )
         response.raise_for_status()
+        logger.info(f"Update response: {response.json()}")
         
         # Reload firewall to apply changes
         reload_response = requests.post(
