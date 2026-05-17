@@ -2,8 +2,7 @@
 FROM node:20-alpine
 
 # Set environment variables
-ENV NODE_ENV=production \
-    PUID=1001 \
+ENV PUID=1001 \
     PGID=1001 \
     PATH=/app/node_modules/.bin:$PATH
 
@@ -29,10 +28,13 @@ RUN echo "Checking typescript installation..." && \
     find node_modules -name tsc -type f && \
     npx tsc
 
-# Remove source files and dev dependencies to reduce image size
+# Remove source files and dev dependencies to reduce image size, then set production mode
 RUN rm -rf src tsconfig.json node_modules && \
-    npm install --only=production && \
+    NODE_ENV=production npm install --only=production && \
     npm cache clean --force
+
+# Set production environment
+ENV NODE_ENV=production
 
 # Create entrypoint script to handle PUID/PGID
 RUN echo '#!/bin/bash\n\
