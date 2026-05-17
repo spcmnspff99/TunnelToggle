@@ -23,9 +23,11 @@ RUN npm install && npm cache clean --force
 # Copy source code
 COPY src ./src
 
-# Build TypeScript using explicit path
-RUN ls -la node_modules/.bin/ && \
-    node node_modules/typescript/bin/tsc
+# Debug and build TypeScript
+RUN echo "Checking typescript installation..." && \
+    npm list typescript && \
+    find node_modules -name tsc -type f && \
+    npx tsc
 
 # Remove source files and dev dependencies to reduce image size
 RUN rm -rf src tsconfig.json node_modules && \
