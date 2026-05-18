@@ -196,6 +196,9 @@ app.get('/', async (req: Request, res: Response) => {
   // Detect TV browsers for compact layout
   const userAgent = req.headers['user-agent'] || '';
   const isTVBrowser = /TVBro|GoogleTV|Android.*TV|SmartTV|BRAVIA/i.test(userAgent);
+  
+  console.log('User-Agent:', userAgent);
+  console.log('TV Browser Detected:', isTVBrowser);
 
   res.send(renderTemplate(clientIp, isRouted, errorMessage, isTVBrowser));
 });
@@ -451,6 +454,7 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
     <div class="container">
         <h1>🔒 TunnelToggle</h1>
         ${!isTVBrowser ? '<p class="subtitle">VPN Gateway Router</p>' : ''}
+        ${isTVBrowser ? '<p style="font-size: 0.7rem; color: #888; margin-bottom: 0.5rem;">[TV Mode]</p>' : ''}
         
         ${errorMessage ? `<div class="error">⚠️ ${errorMessage}</div>` : ''}
         
