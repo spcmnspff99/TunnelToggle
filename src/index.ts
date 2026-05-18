@@ -485,31 +485,46 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             const geoInfoEl = document.getElementById('geo-info');
             
             try {
-                // Use ip-api.com - supports CORS, provides geo data, no aggressive caching
-                const cacheBuster = new Date().getTime();
-                console.log('[External IP] Fetching from ip-api.com (client-side)...');
+                // Use ifconfig.me - simple, no session caching
+                const cacheBuster = new Date().getTime() + Math.random();
+                console.log('[External IP] Fetching from ifconfig.me (client-side)...');
                 
-                const response = await fetch(\`http://ip-api.com/json/?t=\${cacheBuster}\`, {
-                    cache: 'no-store'
+                const response = await fetch(\`https://ifconfig.me/ip?t=\${cacheBuster}\`, {
+                    cache: 'no-store',
+                    headers: {
+                        'Accept': 'text/plain'
+                    }
                 });
                 
                 if (!response.ok) {
                     throw new Error(\`HTTP error! status: \${response.status}\`);
                 }
                 
-                const data = await response.json();
-                console.log('[External IP] Response:', data);
+                const ip = (await response.text()).trim();
+                console.log('[External IP] Got IP:', ip);
                 
-                externalIpEl.textContent = data.query || 'Unknown';
+                externalIpEl.textContent = ip;
                 externalIpEl.classList.remove('loading');
                 
-                const city = data.city || '';
-                const region = data.regionName || '';
-                const country = data.country || '';
-                
-                if (city || region) {
-                    geoInfoEl.textContent = 
-                        \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                // Try to get geo info separately
+                try {
+                    const geoResponse = await fetch(\`http://ip-api.com/json/\${ip}?t=\${cacheBuster}\`, {
+                        cache: 'no-store'
+                    });
+                    
+                    if (geoResponse.ok) {
+                        const geoData = await geoResponse.json();
+                        const city = geoData.city || '';
+                        const region = geoData.regionName || '';
+                        const country = geoData.country || '';
+                        
+                        if (city || region) {
+                            geoInfoEl.textContent = 
+                                \`\${city}\${city && region ? ', ' : ''}\${region}\${country ? ' (' + country + ')' : ''}\`;
+                        }
+                    }
+                } catch (geoError) {
+                    console.warn('[External IP] Could not fetch geo data:', geoError);
                 }
             } catch (error) {
                 console.error('[External IP] Failed to fetch:', error);
