@@ -1,45 +1,51 @@
-# Use Python 3.11 slim base image for minimal footprint
-FROM python:3.11-slim
+# Use Node.js 20 Alpine for minimal footprint
+FROM node:20-alpine
 
 # Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    PUID=1001 \
-    PGID=1001
+ENV PUID=1001 \
+    PGID=1001 \
+    PATH=/app/node_modules/.bin:$PATH
 
 # Set working directory
 WORKDIR /app
 
-# Copy requirements first for better layer caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy application code
-COPY app.py .
-
-# Create entrypoint script to handle PUID/PGID
-RUN echo '#!/bin/bash\n\
-groupadd -g ${PGID} appgroup 2>/dev/null || true\n\
-useradd -u ${PUID} -g ${PGID} -m -s /bin/bash appuser 2>/dev/null || true\n\
-chown -R ${PUID}:${PGID} /app\n\
-exec gosu ${PUID}:${PGID} gunicorn --bind 0.0.0.0:5000 --workers 2 --threads 4 --timeout 60 --access-logfile - --error-logfile - app:app\n\
-' > /entrypoint.sh && chmod +x /entrypoint.sh
-
 # Install gosu for proper user switching
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gosu && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache gosu bash
 
-# Expose Flask port
+# Copy package files first for better layer caching
+COPY package.json ./
+COPY tsconfig.json ./
+
+# Install dependencies (including dev dependencies for build)
+RUN npm install && npm cache clean --force
+
+# Copy source code
+COPY src ./src
+
+# Debug and build TypeScript
+RUN echo "Checking typescript installation..." && \
+    npm list typescript && \
+    find node_modules -name tsc -type f && \
+    npx tsc
+
+# Remove source files and dev dependencies to reduce image size, then set production mode
+RUN rm -rf src tsconfig.json node_modules && \
+    NODE_ENV=production npm install --only=production && \
+    npm cache clean --force
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Expose application port
 EXPOSE 5000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:5000', timeout=5)" || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost:5000/ || exit 1
 
 # Run application with entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
