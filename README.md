@@ -101,7 +101,7 @@ http://<nas-or-host-ip>:5000
 
 - `GET /` — Render status page and controls
 - `POST /toggle` — Toggle caller IP in alias
-- `GET /external-ip` — Returns the server's public IP (not the requesting client's routed public IP); useful for diagnostics
+- `GET /external-ip` — Returns the TunnelToggle server/container outbound public IP; this is for server diagnostics and does not report the client device’s routed public IP
 
 ## Network Configuration
 
