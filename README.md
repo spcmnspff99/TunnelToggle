@@ -1,6 +1,6 @@
 # TunnelToggle 🔒
 
-A lightweight, containerized **Node.js + TypeScript** web application for Google TV and iPad that enables one-click VPN gateway routing via the OPNsense API.
+A lightweight, containerized **Node.js + TypeScript** web application enables one-click VPN gateway routing via the OPNsense API on any device.
 
 ## Features
 
