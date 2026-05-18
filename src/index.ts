@@ -450,7 +450,7 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
 <body>
     <div class="container">
         <h1>🔒 TunnelToggle</h1>
-        <p class="subtitle">VPN Gateway Router</p>
+        ${!isTVBrowser ? '<p class="subtitle">VPN Gateway Router</p>' : ''}
         
         ${errorMessage ? `<div class="error">⚠️ ${errorMessage}</div>` : ''}
         
