@@ -287,8 +287,8 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         }
         
         h1 {
-            font-size: ${isTVBrowser ? '1.8rem' : '2.5rem'};
-            margin-bottom: ${isTVBrowser ? '0.5rem' : '1rem'};
+            font-size: ${isTVBrowser ? '1.4rem' : '2.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.6rem' : '1rem'};
             color: #ffffff;
         }
         
@@ -296,26 +296,27 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             font-size: ${isTVBrowser ? '0.9rem' : '1.1rem'};
             color: #b0b0b0;
             margin-bottom: ${isTVBrowser ? '1rem' : '2rem'};
+            display: ${isTVBrowser ? 'none' : 'block'};
         }
         
         .info-card {
             background: #1e1e1e;
-            border-radius: ${isTVBrowser ? '8px' : '12px'};
-            padding: ${isTVBrowser ? '0.8rem' : '1.5rem'};
-            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
+            border-radius: ${isTVBrowser ? '6px' : '12px'};
+            padding: ${isTVBrowser ? '0.5rem 0.8rem' : '1.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.5rem' : '1.5rem'};
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         
         .info-label {
-            font-size: ${isTVBrowser ? '0.75rem' : '0.9rem'};
+            font-size: ${isTVBrowser ? '0.65rem' : '0.9rem'};
             color: #888;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: ${isTVBrowser ? '0.3rem' : '0.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.2rem' : '0.5rem'};
         }
         
         .info-value {
-            font-size: ${isTVBrowser ? '1.1rem' : '1.5rem'};
+            font-size: ${isTVBrowser ? '0.95rem' : '1.5rem'};
             font-weight: 600;
             color: #4fc3f7;
             word-break: break-all;
@@ -323,11 +324,11 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .status-badge {
             display: inline-block;
-            padding: ${isTVBrowser ? '0.4rem 1rem' : '0.5rem 1.5rem'};
+            padding: ${isTVBrowser ? '0.3rem 0.8rem' : '0.5rem 1.5rem'};
             border-radius: 20px;
-            font-size: ${isTVBrowser ? '0.85rem' : '1rem'};
+            font-size: ${isTVBrowser ? '0.75rem' : '1rem'};
             font-weight: 600;
-            margin: ${isTVBrowser ? '0.6rem 0' : '1rem 0'};
+            margin: ${isTVBrowser ? '0.4rem 0' : '1rem 0'};
         }
         
         .status-routed {
@@ -342,14 +343,14 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .toggle-button {
             width: 100%;
-            padding: ${isTVBrowser ? '1rem' : '1.5rem'};
-            font-size: ${isTVBrowser ? '1.1rem' : '1.5rem'};
+            padding: ${isTVBrowser ? '0.7rem' : '1.5rem'};
+            font-size: ${isTVBrowser ? '0.95rem' : '1.5rem'};
             font-weight: 700;
             border: none;
-            border-radius: ${isTVBrowser ? '8px' : '12px'};
+            border-radius: ${isTVBrowser ? '6px' : '12px'};
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.5rem' : '1.5rem'};
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -381,34 +382,34 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .external-ip-card {
             background: #1e1e1e;
-            border-radius: ${isTVBrowser ? '8px' : '12px'};
-            padding: ${isTVBrowser ? '0.8rem' : '1.5rem'};
-            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
+            border-radius: ${isTVBrowser ? '6px' : '12px'};
+            padding: ${isTVBrowser ? '0.5rem 0.8rem' : '1.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.5rem' : '1.5rem'};
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         
         .external-ip-value {
-            font-size: ${isTVBrowser ? '1rem' : '1.3rem'};
+            font-size: ${isTVBrowser ? '0.9rem' : '1.3rem'};
             font-weight: 600;
             color: #66bb6a;
-            margin-top: ${isTVBrowser ? '0.3rem' : '0.5rem'};
+            margin-top: ${isTVBrowser ? '0.2rem' : '0.5rem'};
         }
         
         .geo-info {
-            font-size: ${isTVBrowser ? '0.8rem' : '1rem'};
+            font-size: ${isTVBrowser ? '0.7rem' : '1rem'};
             color: #b0b0b0;
-            margin-top: ${isTVBrowser ? '0.3rem' : '0.5rem'};
+            margin-top: ${isTVBrowser ? '0.2rem' : '0.5rem'};
         }
         
         .refresh-btn {
             background: #424242;
             border: none;
             color: #e0e0e0;
-            padding: ${isTVBrowser ? '0.4rem 0.8rem' : '0.5rem 1rem'};
-            border-radius: 8px;
+            padding: ${isTVBrowser ? '0.3rem 0.6rem' : '0.5rem 1rem'};
+            border-radius: 6px;
             cursor: pointer;
-            font-size: ${isTVBrowser ? '0.75rem' : '0.9rem'};
-            margin-top: ${isTVBrowser ? '0.5rem' : '0.75rem'};
+            font-size: ${isTVBrowser ? '0.65rem' : '0.9rem'};
+            margin-top: ${isTVBrowser ? '0.3rem' : '0.75rem'};
             transition: background 0.2s;
         }
         
