@@ -195,7 +195,7 @@ app.get('/', async (req: Request, res: Response) => {
 
   // Detect TV browsers for compact layout
   const userAgent = req.headers['user-agent'] || '';
-  const isTVBrowser = /TVBro|GoogleTV|Android.*TV|SmartTV|BRAVIA/i.test(userAgent);
+  const isTVBrowser = /TVBro|GoogleTV|Android.*TV|SmartTV|BRAVIA|Chromecast/i.test(userAgent);
   
   console.log('User-Agent:', userAgent);
   console.log('TV Browser Detected:', isTVBrowser);
