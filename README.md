@@ -101,7 +101,7 @@ http://<nas-or-host-ip>:5000
 
 - `GET /` — Render status page and controls
 - `POST /toggle` — Toggle caller IP in alias
-- `GET /external-ip` — Returns the server's external IP (from the server's perspective), not the client's routed external IP; useful for server diagnostics only
+- `GET /external-ip` — Returns the public egress IP of where the TunnelToggle process runs (typically the Docker host path), not the requesting client's own routed egress IP; useful for server-side diagnostics only
 
 ## Network Configuration
 
