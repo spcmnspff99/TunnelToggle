@@ -193,7 +193,11 @@ app.get('/', async (req: Request, res: Response) => {
     isRouted = currentIps.includes(clientIp);
   }
 
-  res.send(renderTemplate(clientIp, isRouted, errorMessage));
+  // Detect TV browsers for compact layout
+  const userAgent = req.headers['user-agent'] || '';
+  const isTVBrowser = /TVBro|GoogleTV|Android.*TV|SmartTV|BRAVIA/i.test(userAgent);
+
+  res.send(renderTemplate(clientIp, isRouted, errorMessage, isTVBrowser));
 });
 
 /**
@@ -250,7 +254,7 @@ app.get('/external-ip', async (req: Request, res: Response) => {
 /**
  * Render the HTML template
  */
-function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: string | null): string {
+function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: string | null, isTVBrowser: boolean = false): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -273,7 +277,7 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: ${isTVBrowser ? '10px' : '20px'};
         }
         
         .container {
@@ -283,35 +287,35 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         }
         
         h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            font-size: ${isTVBrowser ? '1.8rem' : '2.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.5rem' : '1rem'};
             color: #ffffff;
         }
         
         .subtitle {
-            font-size: 1.1rem;
+            font-size: ${isTVBrowser ? '0.9rem' : '1.1rem'};
             color: #b0b0b0;
-            margin-bottom: 2rem;
+            margin-bottom: ${isTVBrowser ? '1rem' : '2rem'};
         }
         
         .info-card {
             background: #1e1e1e;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            border-radius: ${isTVBrowser ? '8px' : '12px'};
+            padding: ${isTVBrowser ? '0.8rem' : '1.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         
         .info-label {
-            font-size: 0.9rem;
+            font-size: ${isTVBrowser ? '0.75rem' : '0.9rem'};
             color: #888;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 0.5rem;
+            margin-bottom: ${isTVBrowser ? '0.3rem' : '0.5rem'};
         }
         
         .info-value {
-            font-size: 1.5rem;
+            font-size: ${isTVBrowser ? '1.1rem' : '1.5rem'};
             font-weight: 600;
             color: #4fc3f7;
             word-break: break-all;
@@ -319,11 +323,11 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .status-badge {
             display: inline-block;
-            padding: 0.5rem 1.5rem;
+            padding: ${isTVBrowser ? '0.4rem 1rem' : '0.5rem 1.5rem'};
             border-radius: 20px;
-            font-size: 1rem;
+            font-size: ${isTVBrowser ? '0.85rem' : '1rem'};
             font-weight: 600;
-            margin: 1rem 0;
+            margin: ${isTVBrowser ? '0.6rem 0' : '1rem 0'};
         }
         
         .status-routed {
@@ -338,14 +342,14 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .toggle-button {
             width: 100%;
-            padding: 1.5rem;
-            font-size: 1.5rem;
+            padding: ${isTVBrowser ? '1rem' : '1.5rem'};
+            font-size: ${isTVBrowser ? '1.1rem' : '1.5rem'};
             font-weight: 700;
             border: none;
-            border-radius: 12px;
+            border-radius: ${isTVBrowser ? '8px' : '12px'};
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: 1.5rem;
+            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -377,34 +381,34 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
         
         .external-ip-card {
             background: #1e1e1e;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
+            border-radius: ${isTVBrowser ? '8px' : '12px'};
+            padding: ${isTVBrowser ? '0.8rem' : '1.5rem'};
+            margin-bottom: ${isTVBrowser ? '0.8rem' : '1.5rem'};
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
         }
         
         .external-ip-value {
-            font-size: 1.3rem;
+            font-size: ${isTVBrowser ? '1rem' : '1.3rem'};
             font-weight: 600;
             color: #66bb6a;
-            margin-top: 0.5rem;
+            margin-top: ${isTVBrowser ? '0.3rem' : '0.5rem'};
         }
         
         .geo-info {
-            font-size: 1rem;
+            font-size: ${isTVBrowser ? '0.8rem' : '1rem'};
             color: #b0b0b0;
-            margin-top: 0.5rem;
+            margin-top: ${isTVBrowser ? '0.3rem' : '0.5rem'};
         }
         
         .refresh-btn {
             background: #424242;
             border: none;
             color: #e0e0e0;
-            padding: 0.5rem 1rem;
+            padding: ${isTVBrowser ? '0.4rem 0.8rem' : '0.5rem 1rem'};
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.9rem;
-            margin-top: 0.75rem;
+            font-size: ${isTVBrowser ? '0.75rem' : '0.9rem'};
+            margin-top: ${isTVBrowser ? '0.5rem' : '0.75rem'};
             transition: background 0.2s;
         }
         
