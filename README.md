@@ -1,26 +1,26 @@
 # TunnelToggle 🔒
 
-A lightweight, containerized Python Flask web application designed for Google TV and iPad that enables one-click VPN gateway routing via OPNsense firewall API.
+A lightweight, containerized **Node.js + TypeScript** web application enables one-click VPN gateway routing via the OPNsense API on any device.
 
 ## Features
 
-- **Automatic IP Detection**: Captures the client device's local IP address automatically
-- **Visual Status Display**: Shows current routing status and external IP with geolocation
-- **One-Click Toggle**: Large, Google TV remote-friendly buttons to route/unroute through VPN
-- **OPNsense Integration**: Directly manages firewall alias entries via API
-- **Dark Mode UI**: Clean, modern interface optimized for TV browsers
-- **D-Pad Compatible**: High-contrast focus states for physical remote navigation
+- **Automatic IP Detection**: Captures the client device IP from the incoming request
+- **Visual Status Display**: Shows current routing status and external IP details
+- **One-Click Toggle**: TV-friendly button to route/unroute a device through VPN
+- **OPNsense Integration**: Manages firewall alias entries via API
+- **Dark Mode UI**: Clean, high-contrast interface optimized for TV browsers
+- **D-Pad Compatible**: Focus states designed for remote navigation
 - **Containerized**: Docker-ready with host networking for transparent IP handling
 
 ## Architecture
 
 The application:
 1. Detects the incoming client IP from the HTTP request
-2. Queries the OPNsense API to check if the IP exists in the configured firewall alias
-3. Displays a toggle button based on current routing state
-4. When toggled, adds or removes the IP from the alias (preserving existing entries)
-5. Reloads the OPNsense firewall to apply changes
-6. Shows external IP and geolocation via client-side fetch to ipinfo.io
+2. Queries OPNsense to see if that IP exists in the configured alias
+3. Displays route status and toggle action
+4. Adds or removes the client IP from the alias while preserving other entries
+5. Calls OPNsense alias reconfigure to apply changes
+6. Fetches external IP info client-side in the browser
 
 ## Prerequisites
 
@@ -34,20 +34,14 @@ The application:
 ### 1. Clone and Configure
 
 ```bash
-# Clone the repository
 git clone <repository-url>
 cd TunnelToggle
-
-# Copy the example environment file
 cp .env.example .env
-
-# Edit .env with your OPNsense credentials
-nano .env
 ```
 
-### 2. Configure Environment Variables
+Then edit `.env` with your OPNsense details.
 
-Edit `.env` with your OPNsense details:
+### 2. Configure Environment Variables
 
 ```env
 OPNSENSE_IP=192.168.1.1
@@ -55,110 +49,124 @@ ALIAS_UUID=your-alias-uuid-here
 OPNSENSE_KEY=your-api-key-here
 OPNSENSE_SECRET=your-api-secret-here
 FLASK_PORT=5000
+PUID=1001
+PGID=1001
 ```
+
+> Note: `FLASK_PORT` is a legacy variable name retained in code for backward compatibility with existing deployments.
 
 **Finding your Alias UUID:**
 1. Log into OPNsense
 2. Go to **Firewall → Aliases**
-3. Click edit on your target alias
-4. The UUID is in the browser URL: `/api/firewall/alias/setItem/{UUID}`
+3. Edit your target alias
+4. UUID appears in URLs like `/api/firewall/alias/setItem/{UUID}`
 
 **Generating API Credentials:**
 1. Go to **System → Access → Users**
-2. Edit your user or create a dedicated API user
-3. Click **API keys** tab
-4. Generate a new key/secret pair
+2. Edit/create user
+3. Open **API keys** tab
+4. Generate key/secret pair
 
 ### 3. Deploy with Docker Compose
 
 ```bash
-# Build and start the container
 docker-compose up -d
-
-# Check logs
 docker-compose logs -f
 ```
 
-The application will be available at `http://<your-host-ip>:5000`
+App URL:
+
+```text
+http://<your-host-ip>:5000
+```
 
 ### 4. Access from Google TV or iPad
 
-Open your TV browser or iPad and navigate to:
-```
+Open:
+
+```text
 http://<nas-or-host-ip>:5000
 ```
 
 ## Usage
 
-1. **View Status**: The page displays your device's local IP and external IP with location
-2. **Toggle Routing**:
-   - If showing **"Route Through VPN"** (blue), click to route traffic through the VPN gateway
-   - If showing **"Disconnect from VPN"** (red), click to route directly (bypass VPN)
-3. **Navigate with Remote**: Use the D-pad on your Google TV remote to focus and select the button
+1. Open the app from your device browser
+2. View detected device IP and current route status
+3. Use the toggle button:
+   - **Route Through VPN**: adds your IP to the OPNsense alias
+   - **Disconnect from VPN**: removes your IP from the alias
+4. Wait briefly while routing changes propagate, then UI refreshes
+
+## API Endpoints
+
+- `GET /` — Render status page and controls
+- `POST /toggle` — Toggle caller IP in alias
+- `GET /external-ip` — Returns the TunnelToggle server/container outbound public IP; this is for server diagnostics and does not report the client device’s routed public IP
 
 ## Network Configuration
 
-The application uses `network_mode: host` in Docker Compose to ensure:
-- The container sees the real client IP without NAT translation
-- Direct access to the OPNsense API on your local network
-- No port mapping complications
+`docker-compose.yml` uses `network_mode: host` so the container can detect real client IPs instead of NAT/proxy-translated addresses.
 
 ## Security Notes
 
-- OPNsense API calls use `verify=False` to handle self-signed certificates
-- Store your `.env` file securely and never commit it to version control
-- Consider restricting API user permissions to only firewall alias management
-- The application runs as a non-root user inside the container
+- OPNsense API calls disable TLS cert verification to support self-signed certs (`rejectUnauthorized: false`)
+- Keep `.env` private and out of version control
+- Use least-privilege API credentials for alias management only
+- Container runs app process as non-root (`gosu` with `PUID`/`PGID`)
 
 ## Troubleshooting
 
-**Connection Errors:**
-- Verify `OPNSENSE_IP` is reachable from your Docker host
-- Check firewall rules allow access to the OPNsense API
-- Ensure API credentials are correct
+**Connection Errors**
+- Verify `OPNSENSE_IP` is reachable from Docker host
+- Confirm firewall rules permit OPNsense API access
+- Recheck API key and secret
 
-**Wrong IP Detected:**
-- Confirm `network_mode: host` is set in docker-compose.yml
-- Check if there's a proxy between the client and the application
+**Wrong IP Detected**
+- Confirm host networking is enabled in Docker Compose
+- Check if requests pass through a reverse proxy altering client IP headers
 
-**Alias Not Updating:**
-- Verify the `ALIAS_UUID` is correct
-- Check OPNsense logs for API errors
-- Ensure the API user has sufficient permissions
+**Alias Not Updating**
+- Verify `ALIAS_UUID`
+- Check OPNsense API logs
+- Ensure API user has alias permissions
 
 ## Development
 
 Run locally without Docker:
 
 ```bash
-# Install dependencies
-pip install -r requirements.txt
+npm install
+npm run build
 
-# Set environment variables
 export OPNSENSE_IP=192.168.1.1
 export ALIAS_UUID=your-uuid
 export OPNSENSE_KEY=your-key
 export OPNSENSE_SECRET=your-secret
+export FLASK_PORT=5000
 
-# Run the application
-python app.py
+npm start
 ```
+
+Useful scripts:
+
+- `npm run build` — Compile TypeScript to `dist/`
+- `npm start` — Run compiled app (`dist/index.js`)
+- `npm run dev` — Build then run once
+- `npm run watch` — TypeScript watch mode
 
 ## Technology Stack
 
-- **Backend**: Python 3.11, Flask, Gunicorn
-- **API Client**: Requests library with SSL verification disabled
-- **Frontend**: Vanilla JavaScript with Fetch API
-- **Containerization**: Docker with Python slim base image
-- **Orchestration**: Docker Compose with host networking
+- **Runtime**: Node.js 18+
+- **Backend**: Express 4
+- **Language**: TypeScript
+- **HTTP Client**: node-fetch
+- **Containerization**: Docker (Node 20 Alpine image)
+- **Orchestration**: Docker Compose (host networking)
 
 ## License
 
-MIT License - See LICENSE file for details
+MIT License
 
 ## Contributing
 
-Pull requests are welcome! Please ensure:
-- Code follows PEP 8 style guidelines
-- Changes are tested with OPNsense API
-- Documentation is updated accordingly
+Pull requests are welcome. Please ensure documentation stays aligned with code changes.
