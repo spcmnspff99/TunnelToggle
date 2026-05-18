@@ -53,7 +53,7 @@ PUID=1001
 PGID=1001
 ```
 
-> Note: The app currently reads `FLASK_PORT` in code as the service port variable for backward compatibility with existing deployments.
+> Note: `FLASK_PORT` is a legacy variable name retained in code for backward compatibility with existing deployments.
 
 **Finding your Alias UUID:**
 1. Log into OPNsense
@@ -101,7 +101,7 @@ http://<nas-or-host-ip>:5000
 
 - `GET /` — Render status page and controls
 - `POST /toggle` — Toggle caller IP in alias
-- `GET /external-ip` — Returns the public egress IP of where the TunnelToggle process runs (typically the Docker host path), not the requesting client's own routed egress IP; useful for server-side diagnostics only
+- `GET /external-ip` — Returns the public egress IP of where the TunnelToggle process runs (typically the Docker host network path), not the requesting client's own routed egress IP; useful for server-side diagnostics only
 
 ## Network Configuration
 
