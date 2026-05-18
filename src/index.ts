@@ -472,10 +472,6 @@ function renderTemplate(clientIp: string, isRouted: boolean, errorMessage: strin
             ${isRouted ? 'Disconnect from VPN' : 'Route Through VPN'}
         </button>
         ` : ''}
-        
-        <div class="footer">
-            Built for Google TV & iPad
-        </div>
     </div>
     
     <script>
