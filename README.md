@@ -53,7 +53,7 @@ PUID=1001
 PGID=1001
 ```
 
-> Note: The app currently reads `FLASK_PORT` in code as the service port variable (legacy name from earlier versions).
+> Note: The app currently reads `FLASK_PORT` in code as the service port variable for backward compatibility with existing deployments.
 
 **Finding your Alias UUID:**
 1. Log into OPNsense
@@ -101,7 +101,7 @@ http://<nas-or-host-ip>:5000
 
 - `GET /` — Render status page and controls
 - `POST /toggle` — Toggle caller IP in alias
-- `GET /external-ip` — Returns the **server/container** external IP via `api.ipify.org`; useful for diagnostics only, not client route verification
+- `GET /external-ip` — Returns the **server/container** external IP via `api.ipify.org`; useful for diagnostics only, because this request is made by the server process (not the client device route path)
 
 ## Network Configuration
 
